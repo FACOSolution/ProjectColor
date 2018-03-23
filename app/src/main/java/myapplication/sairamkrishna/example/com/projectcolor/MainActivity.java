@@ -1,5 +1,6 @@
 package myapplication.sairamkrishna.example.com.projectcolor;
 
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -14,6 +15,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.WindowManager;
@@ -25,17 +27,24 @@ import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
+import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
+
+import java.io.File;
+
+import static android.R.id.input;
 
 public class MainActivity extends AppCompatActivity /*implements View.OnTouchListener, CameraBridgeViewBase.CvCameraViewListener2 */{
 
 
     public static final String TAG = "MainActivity";
+
 
     //Flag to verify a photo capture
     private boolean capture = false;
@@ -61,7 +70,7 @@ public class MainActivity extends AppCompatActivity /*implements View.OnTouchLis
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+       // setContentView(new DrawingView(this));
 
         Button btnCamera = (Button)findViewById(R.id.btnCamera);
         //imageview = (ImageView)findViewById(R.id.imageview);
@@ -78,6 +87,7 @@ public class MainActivity extends AppCompatActivity /*implements View.OnTouchLis
 
 
 
+
         //Initializing the variables from screen
 
         touchedXY = (TextView)findViewById(R.id.xy);
@@ -91,41 +101,36 @@ public class MainActivity extends AppCompatActivity /*implements View.OnTouchLis
         imgSource2.setOnTouchListener(imgSourceOnTouchListener);
 
 
-/*
-
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        touch_coordinates = (TextView) findViewById(R.id.touch_coordinates);
-        touch_color = (TextView) findViewById(R.id.touch_color);
-
-
-        mOpenCvCameraView = (CameraBridgeViewBase) findViewById(R.id.opencv_tutorial_activity_surface_view);
-        mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
-        mOpenCvCameraView.setCvCameraViewListener(this);
-        */
 
     }
 
-/*
-    public Bitmap BITMAP_RESIZER(Bitmap bitmap,int newWidth,int newHeight) {
-        Bitmap scaledBitmap = Bitmap.createBitmap(newWidth, newHeight, Bitmap.Config.ARGB_8888);
 
-        float ratioX = newWidth / (float) bitmap.getWidth();
-        float ratioY = newHeight / (float) bitmap.getHeight();
-        float middleX = newWidth / 2.0f;
-        float middleY = newHeight / 2.0f;
+    class DrawingView extends SurfaceView {
 
-        Matrix scaleMatrix = new Matrix();
-        scaleMatrix.setScale(ratioX, ratioY, middleX, middleY);
+        private final SurfaceHolder surfaceHolder;
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-        Canvas canvas = new Canvas(scaledBitmap);
-        canvas.setMatrix(scaleMatrix);
-        canvas.drawBitmap(bitmap, middleX - bitmap.getWidth() / 2, middleY - bitmap.getHeight() / 2, new Paint(Paint.FILTER_BITMAP_FLAG));
+        public DrawingView(Context context) {
+            super(context);
+            surfaceHolder = getHolder();
+            paint.setColor(Color.RED);
+            paint.setStyle(Paint.Style.FILL);
+        }
 
-        return scaledBitmap;
-
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            if(event.getAction() == MotionEvent.ACTION_DOWN) {
+                if (surfaceHolder.getSurface().isValid()) {
+                    Canvas canvas = surfaceHolder.lockCanvas();
+                    canvas.drawColor(Color.BLACK);
+                    canvas.drawCircle(event.getX(), event.getY(), 50, paint);
+                    surfaceHolder.unlockCanvasAndPost(canvas);
+                }
+            }
+            return false;
+        }
     }
-    */
+
 
     //TAKE CAMERA ALGORITHM
     @Override
@@ -135,9 +140,19 @@ public class MainActivity extends AppCompatActivity /*implements View.OnTouchLis
         capture = true;
         Bitmap bitmap = (Bitmap)data.getExtras().get("data");
     //    Bitmap bitmap2 = BITMAP_RESIZER(bitmap,0,0);
-        imgSource2.setImageBitmap(bitmap);
-    }
 
+
+        Mat tmp = new Mat (bitmap.getWidth(), bitmap.getHeight(), CvType.CV_8UC1);
+        Utils.bitmapToMat(bitmap, tmp);
+       // Imgproc.cvtColor(tmp, tmp, Imgproc.COLOR_BGR2Lab);
+
+
+        Utils.matToBitmap(tmp,bitmap);
+
+      //  imgSource2.setImageBitmap(bitmap);
+
+
+    }
 
 
     //While the picture was touched this method update the pixel color
@@ -190,10 +205,19 @@ public class MainActivity extends AppCompatActivity /*implements View.OnTouchLis
                         y = bitmap.getHeight() - 1;
                     }
 
-                    int touchedRGB = bitmap.getPixel(x, y);
+                    int color = bitmap.getPixel(x, y);
 
-                    colorRGB.setText("touched color: " + "#" + Integer.toHexString(touchedRGB));
-                    colorRGB.setTextColor(touchedRGB);
+                    int A = (color >> 24) & 0xff; // or color >>> 24
+                    int R = (color >> 16) & 0xff;
+                    int G = (color >>  8) & 0xff;
+                    int B = (color      ) & 0xff;
+
+                    String str = "A = " + String.valueOf(A) + ", R = " + String.valueOf(R) + ", G = " + String.valueOf(G) + ", B = " + String.valueOf(B);
+
+                    Log.d("COR:", str);
+
+                    colorRGB.setText("touched color: " + "#" + Integer.toHexString(color));
+                    colorRGB.setTextColor(color);
 
                     return true;
 

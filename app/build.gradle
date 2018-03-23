@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 23
-    buildToolsVersion '23.0.3'
+    buildToolsVersion '25.0.0'
 
     defaultConfig {
         applicationId "myapplication.sairamkrishna.example.com.projectcolor"
@@ -17,7 +17,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-    sourceSets { main { jni.srcDirs = ['src/main/jni', 'src/main/jniLibs/'] } }
+    sourceSets { main { jni.srcDirs = ['src/main/jni', 'src/main/jniLibs/',  'libs' ] } }
+
 }
 
 dependencies {
